@@ -1,138 +1,119 @@
-// test comment
-	var current_id = 1
- var rlist = { 
-            width:200,
-            view: "tree",
-            activetitle: true,
-            select: true,
-            id: "room_tree",
-            data: [{
-                id: "1",
-                value: "Комната"
-            }, {
-                id: "2",
-                value: "Кухня"
-            }, {
-                id: "3",
-                value: "Зал"
-            }, {
-                id: "4",
-                value: "Бойлер"
-            }]
-        }
-  var mt_data = [{
-                start_time: "8:00",
-                end_time: "2:00",
-                r_t: "22.5",
-                h_t: "60"
-            }, {
-                start_time: "22:00",
-                end_time: "8:00",
-                r_t: "21.0",
-                h_t: "60"
-            }];
-        var room = {
-            view: "datatable",
-            columns: [{
-                id: "start_time",
-                header: "Start time",
-                width: 100,
-                editor: "text"
-            }, {
-                id: "end_time",
-                header: "End time",
-                width: 100,
-                editor: "text"
-            }, {
-                id: "r_t",
-                header: "Room temp &deg C",
-                width: 100,
-                editor: "text"
-            }, {
-                id: "h_t",
-                header: "Heater temp &deg C",
-                width: 100,
-                editor: "text"
-            }, ],
-            editaction: "dblclick",
-            select: "row",
-            autoheight: true,
-            autowidth: true,
-            editable: true,
-            id: "room_datatable"
-        };
-       webix.ui({
-            rows: [
-            { type:"header", template:"Gcubelabs Energy Saving System" },
-            {
-            type:"space",
-                cols: [
-                    rlist, {
-                            rows: [
-                               {view:"template", content:"room_name", height:50},
-                               {view:"template", content:"room_status", height:50},
-                               room,
-                               {cols:[{
-                                width:55,
-                                view: "button",
-                                id: "my_button",
-                                value: "Add",
-                                inputWidth: 50
-                            }, {
-                                view: "button",
-                                id: "my_button_del",
-                                value: "Delete",
-                                type: "danger",
-                                inputWidth: 70
-                                }]}
+webix.ui({
+    rows: [{
+        type: "header",
+        template: "Gcubelabs Energy Saving System"
+    }, {
+        type: "space",
+        cols: [
+            rlist, {
+                rows: [{
+                        view: "template",
+                        content: "room_name",
+                        height: 50
+                    }, {
+                        view: "template",
+                        content: "room_status",
+                        height: 50
+                    },
+                    room, {
+                        cols: [{
+                            width: 55,
+                            view: "button",
+                            id: "add_button",
+                            value: "Add",
+                            inputWidth: 50
+                        }, {
+                            view: "button",
+                            width: 75,
+                            id: "del_button",
+                            value: "Delete",
+                            type: "danger",
+                            inputWidth: 70
+                        }, {
+                            view: "button",
+                            id: "save_button",
+                            value: "Save",
+                            type: "form",
+                            inputWidth: 70
+                        }]
+                    },
+                    my_chart,
 
-                        ]
-                    }
                 ]
-            }, ]
-        });
-        $$("room_datatable").parse(mt_data, "json")
-        $$("room_tree").attachEvent("onItemClick", function(id, e, node){
-            var item = this.getItem(id);
-            current_id = id;
-            webix.ajax("schedule/"+id, function(text){
-                obj = JSON.parse(text)
-                $$("room_datatable").clearAll()
-                $$("room_datatable").parse(obj, "json")
-            });
-            webix.ajax("status/"+current_id, function(text){
-                obj = JSON.parse(text)
-                document.getElementById("room_name").innerHTML = "Имя: " + obj['room_name'];
-                document.getElementById("room_status").innerHTML = "Температура: " + obj['room_temp'];
-                document.getElementById("room_status").innerHTML += "&degC; Батарея: " + obj['room_ht'] + "&degC;";
-            });
-            });
-    $$("my_button").attachEvent("onItemClick", function(id, e){
-        var mt_data = [{
-                start_time: "8:00",
-                end_time: "22:00",
-                r_t: "22.5",
-                h_t: "61"
-            }, {
-                start_time: "22:00",
-                end_time: "8:00",
-                r_t: "21.0",
-                h_t: "61"
-            }];
+            }
+        ]
+    }, ]
+});
+
+function loadRoomData() {
+    webix.ajax("schedule/" + current_id, function(text) {
+        obj = JSON.parse(text)
         $$("room_datatable").clearAll()
-        $$("room_datatable").parse(mt_data, "json")
+        $$("room_datatable").parse(obj, "json")
+    });
+    webix.ajax("status/" + current_id, function(text) {
+        obj = JSON.parse(text)
+        document.getElementById("room_name").innerHTML = "Имя: " + obj['room_name'];
+        document.getElementById("room_status").innerHTML = "Температура: " + obj['room_temp'];
+        document.getElementById("room_status").innerHTML += "&degC; Батарея: " + obj['room_ht'] + "&degC;";
+    });
+    $$("mychart").clearAll()
+    $$("mychart").load('statistics/' + current_id, 'csv')
+}
+
+$$("room_tree").attachEvent("onItemClick", function(id, e, node) {
+    var item = this.getItem(id);
+    current_id = id;
+    loadRoomData();
+});
+window.onload = function() {
+    loadRoomData();
+};
+/**
+* Attach event for delete button
+*/
+$$("del_button").attachEvent("onItemClick", function(id, e) {
+    var schedule = $$("room_datatable");
+    if (schedule.getVisibleCount() < 2) {
+        alert("Должно быть как минимум 2 интервала!")
+    } else {
+        $$("room_datatable").remove($$("room_datatable").getSelectedId())
+    }
+});
+
+$$("add_button").attachEvent("onItemClick", function(id, e) {
+    var schedule = $$("room_datatable");
+    schedule.add({})
+});
+
+$$("save_button").attachEvent("onItemClick", function(id, e) {
+    var schedule = $$("room_datatable");
+    if (schedule.validate() == false) {
+        alert("Неверное расписание!")
+        return;
+    };
+    webix.ajax().headers({
+        "Content-type": "application/json"
+    }).post("/schedule/" + current_id, JSON.stringify(schedule.serialize()), {
+        error: function(text, data, XmlHttpRequest) {
+            alert("Ошибка в расписании! Не совпадает время начала/конца в строке " + text);
+        },
+        success: function(text, data, XmlHttpRequest) {
+            alert("ОК!");
         }
-        );
-    	window.onload = function(){
-        	webix.ajax("status/"+current_id, function(text){
-                obj = JSON.parse(text)
-                document.getElementById("room_name").innerHTML = "Имя: " + obj['room_name'];
-                document.getElementById("room_status").innerHTML = "Температура: " + obj['room_temp'];
-                document.getElementById("room_status").innerHTML += "&degC; Батарея: " + obj['room_ht'] + "&degC;";
-			});
-			webix.ajax("schedule/"+current_id, function(text){
-                obj = JSON.parse(text)
-                $$("room_datatable").clearAll()
-                $$("room_datatable").parse(obj, "json")
-			});
-        };
+    });
+});
+$$("mychart").load('statistics/' + current_id, 'csv')
+/**
+* Sort schedule according to the start time
+*/
+function sortSchedule(array, asc) {
+    res = array.sort(function(a, b) {
+        field = "start_time"
+        s1 = parseInt(a[field].split(":")[0]) * 60 + parseInt(a[field].split(":")[1])
+        s2 = parseInt(b[field].split(":")[0]) * 60 + parseInt(b[field].split(":")[1])
+        if (asc) return (s1 > s2) ? 1 : ((s1 < s2) ? -1 : 0);
+        else return (s2 > s1) ? 1 : ((s2 < s1) ? -1 : 0);
+    });
+    return res;
+}
