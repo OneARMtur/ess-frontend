@@ -106,10 +106,10 @@ var my_chart = {
 var room = {
     view: "datatable",
     rules: {
-        "start_time": validTime,
-        "end_time": validTime,
-        "r_t": validTemperature,
-        "h_t": validTemperature
+        "start": validTime,
+        "end": validTime,
+        "t": validTemperature,
+        "th": validTemperature
     },
     columns: [{
         id: "start",
